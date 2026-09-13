@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════
+# CODE212 - Resource Service
+# Profil : local (développement sur votre machine)
+# ═══════════════════════════════════════════════════════════
+
+server:
+  port: 8082
+
+spring:
+  application:
+    name: resource-service
+
+  # ─── Base de données PostgreSQL ───────────────────────
+  datasource:
+    url: jdbc:postgresql://localhost:5432/resource_db
+    username: code212
+    password: code212
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # ─── JPA / Hibernate ──────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: update              # Hibernate crée / met à jour les tables
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+
+  # ─── Sécurité Keycloak (OAuth2 Resource Server) ───────
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8090/realms/code212
+          jwk-set-uri: http://localhost:8090/realms/code212/protocol/openid-connect/certs
+
+# ═══════════════════════════════════════════════════════════
+# SWAGGER / OpenAPI
+# ═══════════════════════════════════════════════════════════
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+
+# ═══════════════════════════════════════════════════════════
+# ACTUATOR + PROMETHEUS
+# ═══════════════════════════════════════════════════════════
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# ═══════════════════════════════════════════════════════════
+# LOGS
+# ═══════════════════════════════════════════════════════════
+logging:
+  level:
+    root: INFO
+    ma.code212: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

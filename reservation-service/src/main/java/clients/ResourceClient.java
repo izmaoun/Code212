@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name = "resource-service", url = "http://localhost:8082")
+@FeignClient(name = "resource-service", url = "${clients.resource-service.url:http://resource-service:8082}")
 public interface ResourceClient {
 
     @GetMapping("/api/resources/{id}")

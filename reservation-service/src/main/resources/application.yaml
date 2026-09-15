@@ -1,16 +1,35 @@
+server:
+  port: 8083
+
 spring:
+  application:
+    name: reservation-service
+
   datasource:
-    url: jdbc:postgresql://postgres:5432/reservation_db
-    username: postgres
-    password: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/reservation_db}
+    username: ${SPRING_DATASOURCE_USERNAME:reservation_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:reservation_pass}
+    driver-class-name: org.postgresql.Driver
+
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
+    show-sql: true
+
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://keycloak:8080/realms/code212
+          issuer-uri: http://${KEYCLOAK_HOST:localhost}:${KEYCLOAK_PORT:8090}/realms/code212
+          jwk-set-uri: http://${KEYCLOAK_INTERNAL:localhost}:${KEYCLOAK_INTERNAL_PORT:8090}/realms/code212/protocol/openid-connect/certs
 
-server:
-  port: 8081
+clients:
+  resource-service:
+    url: ${RESOURCE_SERVICE_URL:http://localhost:8082}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

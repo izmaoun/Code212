@@ -1,0 +1,184 @@
+
+# ═══════════════════════════════════════════════════════════════
+# RÉSEAU COMMUN
+# ═══════════════════════════════════════════════════════════════
+networks:
+  code212-net:
+    driver: bridge
+
+# ═══════════════════════════════════════════════════════════════
+# VOLUMES PERSISTANTS
+# ═══════════════════════════════════════════════════════════════
+volumes:
+  keycloak_db_data:
+  resource_db_data:
+  reservation_db_data:
+
+services:
+
+  # ═══════════════════════════════════════════════════════════════
+  # KEYCLOAK - Base de données
+  # ═══════════════════════════════════════════════════════════════
+  keycloak-db:
+    image: postgres:16-alpine
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_DB_NAME:-keycloak}
+      POSTGRES_USER: ${KEYCLOAK_DB_USER:-keycloak_user}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_pass}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5435:5432"
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - code212-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KEYCLOAK_DB_USER:-keycloak_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════════
+  # KEYCLOAK - Serveur d'identités
+  # ═══════════════════════════════════════════════════════════════
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.7
+    container_name: keycloak
+    command:
+      - start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB_NAME:-keycloak}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER:-keycloak_user}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_pass}
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HTTP_PORT: 8080
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8090
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - code212-net
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════
+  # RESOURCE-SERVICE - Base de données
+  # ═══════════════════════════════════════════════════════════════
+  resource-db:
+    image: postgres:16-alpine
+    container_name: resource-db
+    environment:
+      POSTGRES_DB: ${RESOURCE_DB_NAME:-resource_db}
+      POSTGRES_USER: ${RESOURCE_DB_USER:-resource_user}
+      POSTGRES_PASSWORD: ${RESOURCE_DB_PASSWORD:-resource_pass}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"
+    volumes:
+      - resource_db_data:/var/lib/postgresql/data
+    networks:
+      - code212-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${RESOURCE_DB_USER:-resource_user} -d ${RESOURCE_DB_NAME:-resource_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════════
+  # RESOURCE-SERVICE - Application Spring Boot
+  # ═══════════════════════════════════════════════════════════════
+  resource-service:
+    build:
+      context: .
+      dockerfile: resource-service/Dockerfile
+    image: code212/resource-service:1.0.0
+    container_name: resource-service
+    environment:
+      # ─── Base de données (convention Spring standard)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://resource-db:5432/${RESOURCE_DB_NAME:-resource_db}
+      SPRING_DATASOURCE_USERNAME: ${RESOURCE_DB_USER:-resource_user}
+      SPRING_DATASOURCE_PASSWORD: ${RESOURCE_DB_PASSWORD:-resource_pass}
+      # ─── Keycloak (interne au réseau Docker)
+      KEYCLOAK_INTERNAL: keycloak
+      KEYCLOAK_INTERNAL_PORT: 8080
+      # ─── Keycloak (issuer = vue externe)
+      KEYCLOAK_HOST: localhost
+      KEYCLOAK_PORT: 8090
+    ports:
+      - "8082:8082"
+    depends_on:
+      resource-db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - code212-net
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════
+  # RESERVATION-SERVICE - Base de données
+  # ═══════════════════════════════════════════════════════════════
+  reservation-db:
+    image: postgres:16-alpine
+    container_name: reservation-db
+    environment:
+      POSTGRES_DB: ${RESERVATION_DB_NAME:-reservation_db}
+      POSTGRES_USER: ${RESERVATION_DB_USER:-reservation_user}
+      POSTGRES_PASSWORD: ${RESERVATION_DB_PASSWORD:-reservation_pass}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5434:5432"
+    volumes:
+      - reservation_db_data:/var/lib/postgresql/data
+    networks:
+      - code212-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${RESERVATION_DB_USER:-reservation_user} -d ${RESERVATION_DB_NAME:-reservation_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════════
+  # RESERVATION-SERVICE - Application Spring Boot
+  # ═══════════════════════════════════════════════════════════════
+  reservation-service:
+    build:
+      context: .
+      dockerfile: reservation-service/Dockerfile
+    image: code212/reservation-service:1.0.0
+    container_name: reservation-service
+    environment:
+      # ─── Base de données
+      SPRING_DATASOURCE_URL: jdbc:postgresql://reservation-db:5432/${RESERVATION_DB_NAME:-reservation_db}
+      SPRING_DATASOURCE_USERNAME: ${RESERVATION_DB_USER:-reservation_user}
+      SPRING_DATASOURCE_PASSWORD: ${RESERVATION_DB_PASSWORD:-reservation_pass}
+      # ─── Client Feign vers resource-service
+      RESOURCE_SERVICE_URL: http://resource-service:8082
+      # ─── Keycloak
+      KEYCLOAK_INTERNAL: keycloak
+      KEYCLOAK_INTERNAL_PORT: 8080
+      KEYCLOAK_HOST: localhost
+      KEYCLOAK_PORT: 8090
+    ports:
+      - "8083:8083"
+    depends_on:
+      reservation-db:
+        condition: service_healthy
+      resource-service:
+        condition: service_started
+      keycloak:
+        condition: service_started
+    networks:
+      - code212-net
+    restart: unless-stopped

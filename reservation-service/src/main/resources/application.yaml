@@ -17,12 +17,12 @@ spring:
       ddl-auto: update
     show-sql: true
 
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://${KEYCLOAK_HOST:localhost}:${KEYCLOAK_PORT:8090}/realms/code212
-          jwk-set-uri: http://${KEYCLOAK_INTERNAL:localhost}:${KEYCLOAK_INTERNAL_PORT:8090}/realms/code212/protocol/openid-connect/certs
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: http://${KEYCLOAK_HOST:localhost}:${KEYCLOAK_PORT:8090}/realms/code212
+#          jwk-set-uri: http://${KEYCLOAK_INTERNAL:localhost}:${KEYCLOAK_INTERNAL_PORT:8090}/realms/code212/protocol/openid-connect/certs
 
 clients:
   resource-service:

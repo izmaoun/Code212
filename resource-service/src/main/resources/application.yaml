@@ -14,7 +14,7 @@ spring:
 #    password: ${SPRING_DATASOURCE_PASSWORD:resource_pass}
 #    driver-class-name: org.postgresql.Driver
 
-#  jpa:
+#  jpa:dir -p api-gateway/src/main/resources
 #    database-platform: org.hibernate.dialect.PostgreSQLDialect
 #    hibernate:
 #      ddl-auto: update

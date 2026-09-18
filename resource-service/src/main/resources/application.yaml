@@ -5,27 +5,39 @@ spring:
   application:
     name: resource-service
 
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/resource_db}
-    username: ${SPRING_DATASOURCE_USERNAME:resource_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:resource_pass}
-    driver-class-name: org.postgresql.Driver
+  config:
+    import: optional:configserver:${CONFIG_SERVICE_URL:http://localhost:9999}
 
-  jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+#  datasource:
+#    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/resource_db}
+#    username: ${SPRING_DATASOURCE_USERNAME:resource_user}
+#    password: ${SPRING_DATASOURCE_PASSWORD:resource_pass}
+#    driver-class-name: org.postgresql.Driver
 
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://${KEYCLOAK_HOST:localhost}:${KEYCLOAK_PORT:8090}/realms/code212
-          jwk-set-uri: http://${KEYCLOAK_INTERNAL:localhost}:${KEYCLOAK_INTERNAL_PORT:8090}/realms/code212/protocol/openid-connect/certs
+#  jpa:
+#    database-platform: org.hibernate.dialect.PostgreSQLDialect
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
 
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: http://${KEYCLOAK_HOST:localhost}:${KEYCLOAK_PORT:8090}/realms/code212
+#          jwk-set-uri: http://${KEYCLOAK_INTERNAL:localhost}:${KEYCLOAK_INTERNAL_PORT:8090}/realms/code212/protocol/openid-connect/certs
+
+#springdoc:
+#  api-docs:
+#    path: /v3/api-docs
+#  swagger-ui:
+#    path: /swagger-ui.html
+
+#eureka:
+#  client:
+#    service-url:
+#      defaultZone: http://localhost:8761/eureka/
+#    register-with-eureka: true
+#    fetch-registry: true
+#  instance:
+#    prefer-ip-address: true

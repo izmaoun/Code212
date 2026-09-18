@@ -1,0 +1,25 @@
+server:
+  port: 9999
+
+spring:
+  application:
+    name: config-server
+
+  cloud:
+    config:
+      server:
+        git:
+          # Dépôt Git local (chemin absolu ou relatif)
+          uri: file:///home/amine/Desktop/Code212/config-repo
+          default-label: master
+          clone-on-start: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,refresh
+
+logging:
+  level:
+    org.springframework.cloud.config: INFO

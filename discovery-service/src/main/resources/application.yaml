@@ -4,28 +4,30 @@ server:
 spring:
   application:
     name: eureka-server
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:9999}
 
-eureka:
-  instance:
-    hostname: localhost
-  client:
-    # Le serveur Eureka ne s'enregistre PAS auprès de lui-même
-    register-with-eureka: false
-    fetch-registry: false
-    service-url:
-      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
-  server:
-    # Désactive la protection d'auto-préservation (utile en dev)
-    enable-self-preservation: false
-    eviction-interval-timer-in-ms: 5000
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-
-logging:
-  level:
-    com.netflix.eureka: WARN
-    com.netflix.discovery: WARN
+#eureka:
+#  instance:
+#    hostname: localhost
+#  client:
+#    # Le serveur Eureka ne s'enregistre PAS auprès de lui-même
+#    register-with-eureka: false
+#    fetch-registry: false
+#    service-url:
+#      defaultZone: http://${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
+#  server:
+#    # Désactive la protection d'auto-préservation (utile en dev)
+#    enable-self-preservation: false
+#    eviction-interval-timer-in-ms: 5000
+#
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,info,metrics
+#
+#logging:
+#  level:
+#    com.netflix.eureka: WARN
+#    com.netflix.discovery: WARN

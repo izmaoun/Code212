@@ -1,14 +1,7 @@
-
-# ═══════════════════════════════════════════════════════════════
-# RÉSEAU COMMUN
-# ═══════════════════════════════════════════════════════════════
 networks:
   code212-net:
     driver: bridge
 
-# ═══════════════════════════════════════════════════════════════
-# VOLUMES PERSISTANTS
-# ═══════════════════════════════════════════════════════════════
 volumes:
   keycloak_db_data:
   resource_db_data:
@@ -17,8 +10,9 @@ volumes:
 services:
 
   # ═══════════════════════════════════════════════════════════════
-  # KEYCLOAK - Base de données
+  # INFRASTRUCTURE
   # ═══════════════════════════════════════════════════════════════
+
   keycloak-db:
     image: postgres:16-alpine
     container_name: keycloak-db
@@ -40,14 +34,10 @@ services:
       timeout: 5s
       retries: 5
 
-  # ═══════════════════════════════════════════════════════════════
-  # KEYCLOAK - Serveur d'identités
-  # ═══════════════════════════════════════════════════════════════
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.7
     container_name: keycloak
-    command:
-      - start-dev
+    command: ["start-dev"]
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB_NAME:-keycloak}
@@ -71,8 +61,45 @@ services:
     restart: unless-stopped
 
   # ═══════════════════════════════════════════════════════════════
-  # RESOURCE-SERVICE - Base de données
+  # CONFIG-SERVICE
   # ═══════════════════════════════════════════════════════════════
+
+  config-service:
+    build:
+      context: ./config-service
+      dockerfile: Dockerfile
+    image: code212/config-service:1.0.0
+    container_name: config-service
+    environment:
+      CONFIG_REPO_PATH: /config-repo
+    volumes:
+      - ./config-repo:/config-repo
+    ports:
+      - "9999:9999"
+    networks:
+      - code212-net
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════
+  # DISCOVERY-SERVICE
+  # ═══════════════════════════════════════════════════════════════
+
+  discovery-service:
+    build:
+      context: ./discovery-service
+      dockerfile: Dockerfile
+    image: code212/discovery-service:1.0.0
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+    networks:
+      - code212-net
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════
+  # RESOURCE-SERVICE
+  # ═══════════════════════════════════════════════════════════════
+
   resource-db:
     image: postgres:16-alpine
     container_name: resource-db
@@ -94,29 +121,37 @@ services:
       timeout: 5s
       retries: 5
 
-  # ═══════════════════════════════════════════════════════════════
-  # RESOURCE-SERVICE - Application Spring Boot
-  # ═══════════════════════════════════════════════════════════════
   resource-service:
     build:
-      context: .
-      dockerfile: resource-service/Dockerfile
+      context: ./resource-service
+      dockerfile: Dockerfile
     image: code212/resource-service:1.0.0
     container_name: resource-service
     environment:
-      # ─── Base de données (convention Spring standard)
-      SPRING_DATASOURCE_URL: jdbc:postgresql://resource-db:5432/${RESOURCE_DB_NAME:-resource_db}
-      SPRING_DATASOURCE_USERNAME: ${RESOURCE_DB_USER:-resource_user}
-      SPRING_DATASOURCE_PASSWORD: ${RESOURCE_DB_PASSWORD:-resource_pass}
-      # ─── Keycloak (interne au réseau Docker)
-      KEYCLOAK_INTERNAL: keycloak
-      KEYCLOAK_INTERNAL_PORT: 8080
-      # ─── Keycloak (issuer = vue externe)
+      # Config Server
+      CONFIG_SERVER_URL: http://config-service:9999
+      # Base de données
+      DB_HOST: resource-db
+      DB_PORT: 5432
+      DB_NAME: ${RESOURCE_DB_NAME:-resource_db}
+      DB_USER: ${RESOURCE_DB_USER:-resource_user}
+      DB_PASSWORD: ${RESOURCE_DB_PASSWORD:-resource_pass}
+      # Eureka
+      EUREKA_HOST: discovery-service
+      EUREKA_PORT: 8761
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      # Keycloak
       KEYCLOAK_HOST: localhost
       KEYCLOAK_PORT: 8090
+      KEYCLOAK_INTERNAL: keycloak
+      KEYCLOAK_INTERNAL_PORT: 8080
     ports:
       - "8082:8082"
     depends_on:
+      config-service:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
       resource-db:
         condition: service_healthy
       keycloak:
@@ -126,8 +161,9 @@ services:
     restart: unless-stopped
 
   # ═══════════════════════════════════════════════════════════════
-  # RESERVATION-SERVICE - Base de données
+  # RESERVATION-SERVICE
   # ═══════════════════════════════════════════════════════════════
+
   reservation-db:
     image: postgres:16-alpine
     container_name: reservation-db
@@ -149,36 +185,74 @@ services:
       timeout: 5s
       retries: 5
 
-  # ═══════════════════════════════════════════════════════════════
-  # RESERVATION-SERVICE - Application Spring Boot
-  # ═══════════════════════════════════════════════════════════════
   reservation-service:
     build:
-      context: .
-      dockerfile: reservation-service/Dockerfile
+      context: ./reservation-service
+      dockerfile: Dockerfile
     image: code212/reservation-service:1.0.0
     container_name: reservation-service
     environment:
-      # ─── Base de données
-      SPRING_DATASOURCE_URL: jdbc:postgresql://reservation-db:5432/${RESERVATION_DB_NAME:-reservation_db}
-      SPRING_DATASOURCE_USERNAME: ${RESERVATION_DB_USER:-reservation_user}
-      SPRING_DATASOURCE_PASSWORD: ${RESERVATION_DB_PASSWORD:-reservation_pass}
-      # ─── Client Feign vers resource-service
-      RESOURCE_SERVICE_URL: http://resource-service:8082
-      # ─── Keycloak
-      KEYCLOAK_INTERNAL: keycloak
-      KEYCLOAK_INTERNAL_PORT: 8080
+      # Config Server
+      CONFIG_SERVER_URL: http://config-service:9999
+      # Base de données
+      DB_HOST: reservation-db
+      DB_PORT: 5432
+      DB_NAME: ${RESERVATION_DB_NAME:-reservation_db}
+      DB_USER: ${RESERVATION_DB_USER:-reservation_user}
+      DB_PASSWORD: ${RESERVATION_DB_PASSWORD:-reservation_pass}
+      # Eureka
+      EUREKA_HOST: discovery-service
+      EUREKA_PORT: 8761
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      # Feign
+      RESOURCE_SERVICE_HOST: resource-service
+      RESOURCE_SERVICE_PORT: 8082
+      # Keycloak
       KEYCLOAK_HOST: localhost
       KEYCLOAK_PORT: 8090
+      KEYCLOAK_INTERNAL: keycloak
+      KEYCLOAK_INTERNAL_PORT: 8080
     ports:
       - "8083:8083"
     depends_on:
+      config-service:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
       reservation-db:
         condition: service_healthy
       resource-service:
         condition: service_started
       keycloak:
         condition: service_started
+    networks:
+      - code212-net
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════
+  # GATEWAY-SERVICE
+  # ═══════════════════════════════════════════════════════════════
+
+  gateway-service:
+    build:
+      context: ./gateway-service
+      dockerfile: Dockerfile
+    image: code212/gateway-service:1.0.0
+    container_name: gateway-service
+    environment:
+      CONFIG_SERVER_URL: http://config-service:9999
+      EUREKA_HOST: discovery-service
+      EUREKA_PORT: 8761
+      EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      JAVA_TOOL_OPTIONS: "-Deureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/"
+
+    ports:
+      - "8888:8888"
+    depends_on:
+      config-service:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
     networks:
       - code212-net
     restart: unless-stopped

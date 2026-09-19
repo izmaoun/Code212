@@ -1,6 +1,7 @@
 package net.amine.resourceservice;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration;
@@ -22,7 +23,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         },
         exclude = {
                 SecurityAutoConfiguration.class,
-                OAuth2ResourceServerAutoConfiguration.class   // ← 🆕 AJOUTER
+                OAuth2ResourceServerAutoConfiguration.class,  // ← 🆕 AJOUTER
+                ManagementWebSecurityAutoConfiguration.class    // ← 🆕 AJOUTER CETTE LIGNE
+
         }
 )
 @EnableJpaRepositories(basePackages = {"dao"})

@@ -244,8 +244,7 @@ services:
       EUREKA_HOST: discovery-service
       EUREKA_PORT: 8761
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-service:8761/eureka/
-      JAVA_TOOL_OPTIONS: "-Deureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/"
-
+      JAVA_TOOL_OPTIONS: "-Deureka.client.service-url.defaultZone=http://discovery-service:8761/eureka/" ##pour s'enregistrer dans eureka et chargement de config
     ports:
       - "8888:8888"
     depends_on:

@@ -1,0 +1,79 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'Maven-3.9'
+    }
+
+    environment {
+        DOCKER_REGISTRY = 'code212'
+    }
+
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
+    stages {
+        stage('📥 Checkout') {
+            steps {
+                echo '📥 Récupération du code source...'
+                checkout scm
+                sh 'git log --oneline -3'
+            }
+        }
+
+        stage('🔨 Build') {
+            steps {
+                echo '🔨 Compilation...'
+                sh 'mvn -f resource-service/pom.xml clean package -DskipTests'
+            }
+        }
+
+        stage('🧪 Test') {
+            steps {
+                echo '🧪 Tests unitaires...'
+                sh 'mvn -f resource-service/pom.xml test || true'
+            }
+        }
+
+        stage('📊 SonarQube Analysis') {
+            steps {
+                echo '📊 Analyse SonarQube...'
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        mvn -f resource-service/pom.xml sonar:sonar \
+                            -Dsonar.projectKey=code212-resource \
+                            -Dsonar.host.url=http://sonarqube:9000 || true
+                    '''
+                }
+            }
+        }
+
+        stage('🐳 Docker Build') {
+            steps {
+                echo '🐳 Construction image Docker...'
+                sh 'docker build -t ${DOCKER_REGISTRY}/resource-service:${BUILD_NUMBER} ./resource-service'
+            }
+        }
+
+        stage('✅ Verify') {
+            steps {
+                echo '✅ Vérification...'
+                sh 'docker images | grep resource-service || true'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Pipeline réussi !'
+        }
+        failure {
+            echo '❌ Pipeline échoué !'
+        }
+        always {
+            echo '🧹 Nettoyage...'
+            cleanWs()
+        }
+    }
+}

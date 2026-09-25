@@ -31,7 +31,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock   # Accès au Docker host
       - ./plugins.txt:/usr/share/jenkins/ref/plugins.txt
     networks:
-      - jnkins-nete
+      - jenkins-net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/login || exit 1"]

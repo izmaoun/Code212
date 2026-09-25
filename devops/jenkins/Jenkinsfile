@@ -7,10 +7,12 @@ pipeline {
 
     environment {
         DOCKER_REGISTRY = 'code212'
+        VERSION = "${env.BUILD_NUMBER}"
+        SERVICES = 'config-service discovery-service gateway-service resource-service reservation-service'
     }
 
     triggers {
-        pollSCM('H/5 * * * *')
+        pollSCM('H/2 * * * *')    // Vérifie Git toutes les 2 minutes
     }
 
     stages {
@@ -22,58 +24,90 @@ pipeline {
             }
         }
 
-        stage('🔨 Build') {
+        // ═══════════════════════════════════════════════════════════
+        // BUILD + TEST + SONARQUBE pour CHAQUE service
+        // ═══════════════════════════════════════════════════════════
+
+        stage('🔨 Build All Services') {
             steps {
-                echo '🔨 Compilation...'
-                sh 'mvn -f resource-service/pom.xml clean package -DskipTests'
+                script {
+                    def services = env.SERVICES.split(' ')
+                    for (service in services) {
+                        echo "🔨 Building ${service}..."
+                        sh "mvn -f ${service}/pom.xml clean package -DskipTests"
+                    }
+                }
             }
         }
 
-        stage('🧪 Test') {
+        stage('🧪 Test All Services') {
             steps {
-                echo '🧪 Tests unitaires...'
-                sh 'mvn -f resource-service/pom.xml test || true'
+                script {
+                    def services = env.SERVICES.split(' ')
+                    for (service in services) {
+                        echo "🧪 Testing ${service}..."
+                        sh "mvn -f ${service}/pom.xml test || true"
+                    }
+                }
             }
         }
 
         stage('📊 SonarQube Analysis') {
             steps {
-                echo '📊 Analyse SonarQube...'
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        mvn -f resource-service/pom.xml sonar:sonar \
-                            -Dsonar.projectKey=code212-resource \
-                            -Dsonar.host.url=http://sonarqube:9000 || true
-                    '''
+                script {
+                    def services = ['resource-service', 'reservation-service', 'gateway-service', 'config-service', 'discovery-service']
+                    for (service in services) {
+                        echo "📊 Analyzing ${service}..."
+                        withSonarQubeEnv('SonarQube') {
+                            sh """
+                                mvn -f ${service}/pom.xml sonar:sonar \
+                                    -Dsonar.projectKey=code212-${service} \
+                                    -Dsonar.projectName=${service} || true
+                            """
+                        }
+                    }
                 }
             }
         }
 
-        stage('🐳 Docker Build') {
+        // ═══════════════════════════════════════════════════════════
+        // DOCKER BUILD pour CHAQUE service
+        // ═══════════════════════════════════════════════════════════
+
+        stage('🐳 Docker Build All Services') {
             steps {
-                echo '🐳 Construction image Docker...'
-                sh 'docker build -t ${DOCKER_REGISTRY}/resource-service:${BUILD_NUMBER} ./resource-service'
+                script {
+                    def services = env.SERVICES.split(' ')
+                    for (service in services) {
+                        echo "🐳 Building Docker image for ${service}..."
+                        sh """
+                            docker build \
+                                -t ${DOCKER_REGISTRY}/${service}:${VERSION} \
+                                -t ${DOCKER_REGISTRY}/${service}:latest \
+                                ./${service} || true
+                        """
+                    }
+                }
             }
         }
 
-        stage('✅ Verify') {
+        stage('✅ Verify Images') {
             steps {
-                echo '✅ Vérification...'
-                sh 'docker images | grep resource-service || true'
+                sh 'docker images | grep ${DOCKER_REGISTRY} || echo "Aucune image trouvée"'
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline réussi !'
+            echo '✅ Pipeline réussi pour TOUS les services !'
         }
         failure {
             echo '❌ Pipeline échoué !'
         }
         always {
             echo '🧹 Nettoyage...'
-            cleanWs()
+            deleteDir()
         }
     }
 }

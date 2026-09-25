@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════════
+# Plugins Jenkins à installer automatiquement
+# ═══════════════════════════════════════════════════════════════
+
+# Git
+git:latest
+github:latest
+github-branch-source:latest
+
+# Pipeline
+workflow-aggregator:latest
+pipeline-stage-view:latest
+pipeline-utility-steps:latest
+
+# Docker
+docker-workflow:latest
+docker-plugin:latest
+
+# Maven
+maven-plugin:latest
+
+# Kubernetes
+kubernetes:latest
+kubernetes-cli:latest
+
+# SonarQube
+sonar:latest
+
+# Blue Ocean (UI moderne)
+blueocean:latest
+
+# Configuration as Code
+configuration-as-code:latest
+
+# Credentials
+credentials-binding:latest
+plain-credentials:latest
+
+# Utilities
+ansicolor:latest
+build-timeout:latest
+timestamper:latest
+ws-cleanup:latest

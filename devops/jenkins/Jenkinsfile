@@ -1,9 +1,9 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven-3.9'
-    }
+//    tools {
+//        maven 'Maven-3.9'
+//    }
 
     environment {
         DOCKER_REGISTRY = 'code212'

@@ -16,7 +16,11 @@ services:
   # JENKINS — Serveur CI/CD
   # ═══════════════════════════════════════════════════════════════
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
+#    image: jenkins/jenkins:lts-jdk17
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: code212/jenkins:2.0.0
     container_name: jenkins
     dns:
       - 8.8.8.8
@@ -29,6 +33,7 @@ services:
       - "repo1.maven.org:104.18.18.12"
       - "deb.debian.org:199.232.34.132"
       - "security.debian.org:151.101.2.132"
+      - "download.docker.com:18.67.250.117"    # 🆕 AJOUTER
     privileged: true
     user: root
     environment:

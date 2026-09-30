@@ -18,26 +18,32 @@ services:
   jenkins:
     image: jenkins/jenkins:lts-jdk17
     container_name: jenkins
-    privileged: true                    # Nécessaire pour Docker-in-Docker
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    extra_hosts:
+      - "github.com:140.82.121.3"
+      - "api.github.com:140.82.121.6"
+      - "codeload.github.com:140.82.121.10"
+      - "repo.maven.apache.org:104.18.19.12"
+      - "repo1.maven.org:104.18.18.12"
+      - "deb.debian.org:199.232.34.132"
+      - "security.debian.org:151.101.2.132"
+    privileged: true
     user: root
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
       - JENKINS_OPTS=--httpPort=8080
     ports:
-      - "8080:8080"                     # UI Jenkins
-      - "50000:50000"                   # Agents
+      - "8080:8080"
+      - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock   # Accès au Docker host
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./plugins.txt:/usr/share/jenkins/ref/plugins.txt
     networks:
       - jenkins-net
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/login || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   # ═══════════════════════════════════════════════════════════════
   # SONARQUBE — Analyse de code

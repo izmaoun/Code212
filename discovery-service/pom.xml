@@ -67,7 +67,7 @@
     </dependencyManagement>
 
     <build>
-        <finalName>discovery-service</finalName>    <!-- 🆕 AJOUTER -->
+        <finalName>discovery-service</finalName>    <!--  AJOUTER -->
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

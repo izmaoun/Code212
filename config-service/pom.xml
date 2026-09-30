@@ -40,13 +40,13 @@
             <artifactId>spring-cloud-config-server</artifactId>
         </dependency>
 
-        <!-- ❌ Inutile -->
+        <!--  Inutile -->
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.cloud</groupId>-->
 <!--            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>-->
 <!--        </dependency>-->
 
-        <!-- ✅ Correct -->
+        <!--  Correct -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -66,7 +66,7 @@
     </dependencyManagement>
 
     <build>
-        <finalName>config-service</finalName>    <!-- 🆕 AJOUTER -->
+        <finalName>config-service</finalName>    <!--  AJOUTER -->
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

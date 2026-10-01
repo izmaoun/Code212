@@ -27,7 +27,16 @@ pipeline {
         // ═══════════════════════════════════════════════════════════
         // BUILD + TEST + SONARQUBE pour CHAQUE service
         // ═══════════════════════════════════════════════════════════
-
+  def services = ['resource-service', 'reservation-service', 'gateway-service', 'config-service', 'discovery-service']
+                    for (service in services) {
+                        echo "📊 Analyzing ${service}..."
+                        withSonarQubeEnv('SonarQube') {
+                            sh """
+                                mvn -f ${service}/pom.xml sonar:sonar \
+                                    -Dsonar.projectKey=code212-${service} \
+                                    -Dsonar.projectName=${service} || true
+                            """
+                        }
         stage('🔨 Build All Services') {
             steps {
                 script {

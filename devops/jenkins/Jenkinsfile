@@ -1,19 +1,19 @@
+import groovy.transform.Field
+
+@Field List<String> SERVICE_LIST = ['config-service', 'discovery-service', 'gateway-service', 'resource-service', 'reservation-service']
+
 pipeline {
     agent any
 
-//    tools {
-//        maven 'Maven-3.9'
-//    }
-
     environment {
+        PATH = "/usr/share/maven/bin:${env.PATH}"
         DOCKER_REGISTRY = 'code212'
         VERSION = "${env.BUILD_NUMBER}"
-        SERVICES = 'config-service discovery-service gateway-service resource-service reservation-service'
     }
 
-    triggers {
-        pollSCM('H/2 * * * *')    // Vérifie Git toutes les 2 minutes
-    }
+//    triggers {
+//        pollSCM('H/5 * * * *')
+//    }
 
     stages {
         stage('📥 Checkout') {
@@ -24,26 +24,12 @@ pipeline {
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // BUILD + TEST + SONARQUBE pour CHAQUE service
-        // ═══════════════════════════════════════════════════════════
-  def services = ['resource-service', 'reservation-service', 'gateway-service', 'config-service', 'discovery-service']
-                    for (service in services) {
-                        echo "📊 Analyzing ${service}..."
-                        withSonarQubeEnv('SonarQube') {
-                            sh """
-                                mvn -f ${service}/pom.xml sonar:sonar \
-                                    -Dsonar.projectKey=code212-${service} \
-                                    -Dsonar.projectName=${service} || true
-                            """
-                        }
         stage('🔨 Build All Services') {
             steps {
                 script {
-                    def services = env.SERVICES.split(' ')
-                    for (service in services) {
-                        echo "🔨 Building ${service}..."
-                        sh "mvn -f ${service}/pom.xml clean package -DskipTests"
+                    for (svc in SERVICE_LIST) {
+                        echo "🔨 Building ${svc}..."
+                        sh "mvn -f ${svc}/pom.xml clean package -DskipTests"
                     }
                 }
             }
@@ -52,10 +38,9 @@ pipeline {
         stage('🧪 Test All Services') {
             steps {
                 script {
-                    def services = env.SERVICES.split(' ')
-                    for (service in services) {
-                        echo "🧪 Testing ${service}..."
-                        sh "mvn -f ${service}/pom.xml test || true"
+                    for (svc in SERVICE_LIST) {
+                        echo "🧪 Testing ${svc}..."
+                        sh "mvn -f ${svc}/pom.xml test || true"
                     }
                 }
             }
@@ -64,14 +49,14 @@ pipeline {
         stage('📊 SonarQube Analysis') {
             steps {
                 script {
-                    def services = ['resource-service', 'reservation-service', 'gateway-service', 'config-service', 'discovery-service']
-                    for (service in services) {
-                        echo "📊 Analyzing ${service}..."
+                    for (svc in SERVICE_LIST) {
+                        echo "📊 Analyzing ${svc}..."
                         withSonarQubeEnv('SonarQube') {
                             sh """
-                                mvn -f ${service}/pom.xml sonar:sonar \
-                                    -Dsonar.projectKey=code212-${service} \
-                                    -Dsonar.projectName=${service} || true
+                                mvn -f ${svc}/pom.xml \
+                                    org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar \
+                                    -Dsonar.projectKey=code212-${svc} \
+                                    -Dsonar.projectName=${svc} || true
                             """
                         }
                     }
@@ -79,21 +64,16 @@ pipeline {
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // DOCKER BUILD pour CHAQUE service
-        // ═══════════════════════════════════════════════════════════
-
         stage('🐳 Docker Build All Services') {
             steps {
                 script {
-                    def services = env.SERVICES.split(' ')
-                    for (service in services) {
-                        echo "🐳 Building Docker image for ${service}..."
+                    for (svc in SERVICE_LIST) {
+                        echo "🐳 Building Docker image for ${svc}..."
                         sh """
                             docker build \
-                                -t ${DOCKER_REGISTRY}/${service}:${VERSION} \
-                                -t ${DOCKER_REGISTRY}/${service}:latest \
-                                ./${service} || true
+                                -t ${DOCKER_REGISTRY}/${svc}:${VERSION} \
+                                -t ${DOCKER_REGISTRY}/${svc}:latest \
+                                ./${svc} || true
                         """
                     }
                 }
@@ -119,5 +99,4 @@ pipeline {
             deleteDir()
         }
     }
-}
 }

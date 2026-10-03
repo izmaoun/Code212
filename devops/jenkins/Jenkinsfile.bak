@@ -1,0 +1,123 @@
+pipeline {
+    agent any
+
+//    tools {
+//        maven 'Maven-3.9'
+//    }
+
+    environment {
+        DOCKER_REGISTRY = 'code212'
+        VERSION = "${env.BUILD_NUMBER}"
+        SERVICES = 'config-service discovery-service gateway-service resource-service reservation-service'
+    }
+
+    triggers {
+        pollSCM('H/2 * * * *')    // Vérifie Git toutes les 2 minutes
+    }
+
+    stages {
+        stage('📥 Checkout') {
+            steps {
+                echo '📥 Récupération du code source...'
+                checkout scm
+                sh 'git log --oneline -3'
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // BUILD + TEST + SONARQUBE pour CHAQUE service
+        // ═══════════════════════════════════════════════════════════
+  def services = ['resource-service', 'reservation-service', 'gateway-service', 'config-service', 'discovery-service']
+                    for (service in services) {
+                        echo "📊 Analyzing ${service}..."
+                        withSonarQubeEnv('SonarQube') {
+                            sh """
+                                mvn -f ${service}/pom.xml sonar:sonar \
+                                    -Dsonar.projectKey=code212-${service} \
+                                    -Dsonar.projectName=${service} || true
+                            """
+                        }
+        stage('🔨 Build All Services') {
+            steps {
+                script {
+                    def services = env.SERVICES.split(' ')
+                    for (service in services) {
+                        echo "🔨 Building ${service}..."
+                        sh "mvn -f ${service}/pom.xml clean package -DskipTests"
+                    }
+                }
+            }
+        }
+
+        stage('🧪 Test All Services') {
+            steps {
+                script {
+                    def services = env.SERVICES.split(' ')
+                    for (service in services) {
+                        echo "🧪 Testing ${service}..."
+                        sh "mvn -f ${service}/pom.xml test || true"
+                    }
+                }
+            }
+        }
+
+        stage('📊 SonarQube Analysis') {
+            steps {
+                script {
+                    def services = ['resource-service', 'reservation-service', 'gateway-service', 'config-service', 'discovery-service']
+                    for (service in services) {
+                        echo "📊 Analyzing ${service}..."
+                        withSonarQubeEnv('SonarQube') {
+                            sh """
+                                mvn -f ${service}/pom.xml sonar:sonar \
+                                    -Dsonar.projectKey=code212-${service} \
+                                    -Dsonar.projectName=${service} || true
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // DOCKER BUILD pour CHAQUE service
+        // ═══════════════════════════════════════════════════════════
+
+        stage('🐳 Docker Build All Services') {
+            steps {
+                script {
+                    def services = env.SERVICES.split(' ')
+                    for (service in services) {
+                        echo "🐳 Building Docker image for ${service}..."
+                        sh """
+                            docker build \
+                                -t ${DOCKER_REGISTRY}/${service}:${VERSION} \
+                                -t ${DOCKER_REGISTRY}/${service}:latest \
+                                ./${service} || true
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('✅ Verify Images') {
+            steps {
+                sh 'docker images | grep ${DOCKER_REGISTRY} || echo "Aucune image trouvée"'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Pipeline réussi pour TOUS les services !'
+        }
+        failure {
+            echo '❌ Pipeline échoué !'
+        }
+        always {
+            echo '🧹 Nettoyage...'
+            deleteDir()
+        }
+    }
+}
+}

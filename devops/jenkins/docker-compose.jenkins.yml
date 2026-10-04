@@ -5,6 +5,7 @@ networks:
 
 volumes:
   jenkins_home:
+  maven_cache:                          # ← AJOUTE CETTE LIGNE
   sonarqube_data:
   sonarqube_logs:
   sonarqube_extensions:
@@ -44,6 +45,7 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
+      - maven_cache:/root/.m2          # ← AJOUTE CETTE LIGNE
       - /var/run/docker.sock:/var/run/docker.sock
       - ./plugins.txt:/usr/share/jenkins/ref/plugins.txt
     networks:

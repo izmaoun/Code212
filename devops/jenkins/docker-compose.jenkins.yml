@@ -81,7 +81,8 @@ services:
       SONAR_JDBC_USERNAME: sonar
       SONAR_JDBC_PASSWORD: sonar
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/api/system/status" ]
+#      test: [ "CMD", "curl", "-f", "http://localhost:9000/api/system/status" ]
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/api/system/status || wget --spider -q http://localhost:9000/api/system/status"]
       interval: 30s        # Teste toutes les 30s
       timeout: 10s         # Attend 10s max par test
       retries: 5           # 5 échecs = "unhealthy"

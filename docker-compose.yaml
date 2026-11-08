@@ -90,8 +90,15 @@ services:
       dockerfile: Dockerfile
     image: code212/discovery-service:1.0.0
     container_name: discovery-service
+    environment:
+      CONFIG_SERVER_URL: http://config-service:9999   # 🆕 AJOUTER
+      EUREKA_HOST: discovery-service                 # 🆕 Optionnel mais recommandé
+      EUREKA_PORT: 8761                              # 🆕 Optionnel
     ports:
       - "8761:8761"
+    depends_on: # 🆕 AJOUTER TOUT CE BLOC
+      config-service:
+        condition: service_healthy
     networks:
       - code212-net
     restart: unless-stopped

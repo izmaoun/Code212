@@ -10,7 +10,8 @@ spring:
       server:
         git:
           # Dépôt Git local (chemin absolu ou relatif)
-          uri: file://${CONFIG_REPO_PATH:/home/amine/Desktop/Code212/config-repo}
+#          uri: file://${CONFIG_REPO_PATH:/home/amine/Desktop/Code212/config-repo}
+          uri: file:/config-repo  # Chemin absolu DANS le conteneur
           default-label: master
           clone-on-start: true
 

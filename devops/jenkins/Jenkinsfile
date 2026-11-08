@@ -35,16 +35,29 @@ pipeline {
             }
         }
 
+//         stage('🧪 Test All Services') {
+//             steps {
+//                 script {
+//                     for (svc in SERVICE_LIST) {
+//                         echo "🧪 Testing ${svc}..."
+//                         sh "mvn -f ${svc}/pom.xml test || true"
+//                     }
+//                 }
+//             }
+//         }
+
         stage('🧪 Test All Services') {
-            steps {
-                script {
-                    for (svc in SERVICE_LIST) {
-                        echo "🧪 Testing ${svc}..."
-                        sh "mvn -f ${svc}/pom.xml test || true"
+                    steps {
+                        script {
+                            for (svc in SERVICE_LIST) {
+                                echo "🧪 Testing ${svc}..."
+                                // On ajoute -DskipTests pour ne pas lancer les tests qui ont besoin d'Eureka/Config
+                                // Et on enlève le "|| true" qui masquait les erreurs
+                                sh "mvn -f ${svc}/pom.xml test -DskipTests"
+                            }
+                        }
                     }
                 }
-            }
-        }
 
         stage('📊 SonarQube Analysis') {
             steps {

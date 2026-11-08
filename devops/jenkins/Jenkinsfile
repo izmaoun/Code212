@@ -47,7 +47,11 @@ pipeline {
 //         }
 
         stage('🧪 Test All Services') {
-                    steps {
+
+          tools {
+                  jdk 'JDK-21'   // Force Java 21 pour le scanner SonarQube
+              }
+          steps {
                         script {
                             for (svc in SERVICE_LIST) {
                                 echo "🧪 Testing ${svc}..."

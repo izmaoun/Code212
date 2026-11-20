@@ -46,19 +46,11 @@ pipeline {
 //             }
 //         }
 
-        stage('🧪 Test All Services') {
-
-          steps {
-                        script {
-                            for (svc in SERVICE_LIST) {
-                                echo "🧪 Testing ${svc}..."
-                                // On ajoute -DskipTests pour ne pas lancer les tests qui ont besoin d'Eureka/Config
-                                // Et on enlève le "|| true" qui masquait les erreurs
-                                sh "mvn -f ${svc}/pom.xml test -DskipTests"
-                            }
-                        }
-                    }
-                }
+        stage('Tests unitaires - resource-service') {
+            steps {
+                sh 'mvn -f resource-service/pom.xml -Dtest=ResourceTest test'
+            }
+        }
 
         stage('📊 SonarQube Analysis') {
             tools {

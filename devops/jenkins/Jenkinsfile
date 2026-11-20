@@ -46,9 +46,10 @@ pipeline {
 //             }
 //         }
 
-        stage('Tests unitaires - resource-service') {
+        stage('Tests unitaires - services métier') {
             steps {
                 sh 'mvn -f resource-service/pom.xml -Dtest=ResourceTest test'
+                sh 'mvn -f reservation-service/pom.xml -Dtest=ReservationServiceImplTest test'
             }
         }
 

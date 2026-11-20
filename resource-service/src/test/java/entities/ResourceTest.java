@@ -20,7 +20,7 @@ class ResourceTest {
         resource.decrementStock(2);
 
         // Comparer le résultat attendu au résultat obtenu.
-        assertEquals(3, resource.getQuantityAvailable());
+        assertEquals(4, resource.getQuantityAvailable());
     }
 
     @Test

@@ -55,8 +55,8 @@ pipeline {
 
         stage('📊 SonarQube Analysis') {
             tools {
-                   jdk 'JDK-21'   // Force Java 21 pour le scanner SonarQube
-                   }
+                jdk 'JDK-21'
+            }
             steps {
                 script {
                     for (svc in SERVICE_LIST) {
@@ -66,8 +66,12 @@ pipeline {
                                 mvn -f ${svc}/pom.xml \
                                     org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar \
                                     -Dsonar.projectKey=code212-${svc} \
-                                    -Dsonar.projectName=${svc} || true
+                                    -Dsonar.projectName=${svc}
                             """
+                        }
+                        echo "Vérification du Quality Gate pour ${svc}"
+                        timeout(time: 5, unit: 'MINUTES') {
+                            waitForQualityGate abortPipeline: true
                         }
                     }
                 }

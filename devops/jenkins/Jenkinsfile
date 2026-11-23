@@ -106,6 +106,48 @@ pipeline {
                 }
             }
         }
+
+        stage('Scan Trivy') {
+            steps {
+                sh 'mkdir -p trivy-reports'
+                script {
+                    def findings = []
+                    def scanErrors = []
+                    for (svc in SERVICE_LIST) {
+                        def image = "${DOCKER_REGISTRY}/${svc}:${VERSION}"
+                        echo "Scan Trivy de l'image ${image}"
+                        def status = sh(returnStatus: true, script: """
+                            docker run --rm \
+                                -v /var/run/docker.sock:/var/run/docker.sock \
+                                -v code212-trivy-cache:/root/.cache/trivy \
+                                aquasec/trivy:0.76.2 image --image-src docker \
+                                --db-repository public.ecr.aws/aquasecurity/trivy-db:2,mirror.gcr.io/aquasec/trivy-db:2 \
+                                --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db:1,mirror.gcr.io/aquasec/trivy-java-db:1 \
+                                --scanners vuln --severity HIGH,CRITICAL \
+                                --timeout 10m --exit-code 10 --no-progress --format json '${image}' \
+                                > 'trivy-reports/${svc}.tmp'
+                        """)
+                        if (status == 0 || status == 10) {
+                            sh "mv 'trivy-reports/${svc}.tmp' 'trivy-reports/${svc}.json'"
+                            if (status == 10) {
+                                findings.add(svc)
+                            }
+                        } else {
+                            scanErrors.add("${svc} (code ${status})")
+                        }
+                    }
+                    if (findings || scanErrors) {
+                        error("Trivy. Vulnérabilités HIGH/CRITICAL : ${findings.join(', ') ?: 'aucune'}. " +
+                              "Scans en erreur : ${scanErrors.join(', ') ?: 'aucun'}.")
+                    }
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-reports/*.json', allowEmptyArchive: true
+                }
+            }
+        }
     }
 
     post {

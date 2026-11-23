@@ -61,13 +61,14 @@ pipeline {
                 script {
                     for (svc in SERVICE_LIST) {
                         echo "📊 Analyzing ${svc}..."
-                        withSonarQubeEnv('SonarQube') {
-                            sh """
-                                mvn -f ${svc}/pom.xml \
-                                    org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar \
-                                    -Dsonar.projectKey=code212-${svc} \
-                                    -Dsonar.projectName=${svc}
-                            """
+                        dir(svc) {
+                            withSonarQubeEnv('SonarQube') {
+                                sh """
+                                    mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.10.0.2594:sonar \
+                                        -Dsonar.projectKey=code212-${svc} \
+                                        -Dsonar.projectName=${svc}
+                                """
+                            }
                         }
                         echo "Vérification du Quality Gate pour ${svc}"
                         timeout(time: 5, unit: 'MINUTES') {

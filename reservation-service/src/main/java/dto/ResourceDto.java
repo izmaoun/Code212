@@ -1,11 +1,13 @@
 package dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 public record ResourceDto(
         Long id,
         String name,
         String description,
         Double price,
-        Integer quantity,
+        @JsonAlias("quantityAvailable") Integer quantity,
         String status
 ) {
 }

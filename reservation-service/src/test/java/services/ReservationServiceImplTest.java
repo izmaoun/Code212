@@ -7,15 +7,26 @@ import dto.ResourceDto;
 import exceptions.ReservationConflictException;
 import mapper.ReservationMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ReservationServiceImplTest {
+
+    @Test
+    void litLeStockDisponibleRenvoyeParResourceService() {
+        ResourceDto resource = JsonMapper.builder().build().readValue("""
+                {"id":1,"name":"Ordinateur","quantityTotal":10,"quantityAvailable":5,"status":"AVAILABLE"}
+                """, ResourceDto.class);
+
+        assertEquals(5, resource.quantity());
+    }
 
     @Test
     void refuseUneReservationQuandLeStockEstInsuffisant() {

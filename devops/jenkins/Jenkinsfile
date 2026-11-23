@@ -88,7 +88,7 @@ pipeline {
                             docker build \
                                 -t ${DOCKER_REGISTRY}/${svc}:${VERSION} \
                                 -t ${DOCKER_REGISTRY}/${svc}:latest \
-                                ./${svc} || true
+                                ./${svc}
                         """
                     }
                 }
@@ -97,7 +97,13 @@ pipeline {
 
         stage('✅ Verify Images') {
             steps {
-                sh 'docker images | grep ${DOCKER_REGISTRY} || echo "Aucune image trouvée"'
+                script {
+                    for (svc in SERVICE_LIST) {
+                        def image = "${DOCKER_REGISTRY}/${svc}:${VERSION}"
+                        echo "Vérification de l'image ${image}"
+                        sh "docker image inspect --format '{{.Id}}' '${image}'"
+                    }
+                }
             }
         }
     }

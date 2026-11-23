@@ -31,7 +31,7 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
         return new JwtAuthenticationToken(
                 jwt,
                 authorities,
-                jwt.getClaim("preferred_username")
+                jwt.getClaimAsString("preferred_username")
         );
     }
 

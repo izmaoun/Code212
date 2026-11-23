@@ -6,3 +6,16 @@ spring:
     name: gateway-service
   config:
     import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:9999}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: resource-service
+              uri: lb://RESOURCE-SERVICE
+              predicates:
+                - Path=/api/resources/**
+            - id: reservation-service
+              uri: lb://RESERVATION-SERVICE
+              predicates:
+                - Path=/api/reservations/**

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-service
+  namespace: code212
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: config-service
+  template:
+    metadata:
+      labels:
+        app: config-service
+    spec:
+      containers:
+        - name: config-service
+          image: code212/config-service:24
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 9999
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:ActiveProcessorCount=2 -Xmx256m"
+            - name: SPRING_PROFILES_ACTIVE
+              value: native
+            - name: SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS
+              value: file:/config-repo/
+            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+              value: health,info
+          volumeMounts:
+            - name: service-config
+              mountPath: /config-repo
+              readOnly: true
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            periodSeconds: 5
+      volumes:
+        - name: service-config
+          configMap:
+            name: code212-service-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-service
+  namespace: code212
+spec:
+  selector:
+    app: config-service
+  ports:
+    - name: http
+      port: 9999
+      targetPort: http

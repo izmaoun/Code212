@@ -1,0 +1,38 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: reservation-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:reservation_db}
+    username: ${DB_USER:reservation_user}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: http://${KEYCLOAK_HOST:localhost}:${KEYCLOAK_PORT:8090}/realms/code212
+#          jwk-set-uri: http://${KEYCLOAK_INTERNAL:localhost}:${KEYCLOAK_INTERNAL_PORT:8090}/realms/code212/protocol/openid-connect/certs
+
+clients:
+  resource-service:
+    url: http://${RESOURCE_SERVICE_HOST:localhost}:${RESOURCE_SERVICE_PORT:8082}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

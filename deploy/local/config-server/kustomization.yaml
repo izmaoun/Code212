@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: code212
+resources:
+  - config-service.yaml
+configMapGenerator:
+  - name: code212-service-config
+    files:
+      - files/application.yaml
+      - files/eureka-server.yaml
+      - files/gateway-service.yaml
+      - files/resource-service.yaml
+      - files/reservation-service.yaml

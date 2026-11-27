@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: resource-db-data
+  namespace: code212
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resource-db
+  namespace: code212
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: resource-db
+  template:
+    metadata:
+      labels:
+        app: resource-db
+    spec:
+      containers:
+        - name: postgres
+          image: code212/postgres:16-alpine
+          imagePullPolicy: Never
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: resource_db
+            - name: POSTGRES_USER
+              value: resource_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: resource-db-credentials
+                  key: password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -ec
+                - pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: resource-db-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resource-db
+  namespace: code212
+spec:
+  selector:
+    app: resource-db
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

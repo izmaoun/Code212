@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: code212-local
+  namespace: argocd
+spec:
+  sourceRepos:
+    - https://github.com/izmaoun/Code212.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: code212
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Service
+    - group: apps
+      kind: Deployment
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: code212-config-server
+  namespace: argocd
+spec:
+  project: code212-local
+  source:
+    repoURL: https://github.com/izmaoun/Code212.git
+    targetRevision: devops
+    path: deploy/local/config-server
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: code212

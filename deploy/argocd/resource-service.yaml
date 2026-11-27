@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: code212-resource-service
+  namespace: argocd
+spec:
+  project: code212-local
+  source:
+    repoURL: https://github.com/izmaoun/Code212.git
+    targetRevision: devops
+    path: deploy/local
+    directory:
+      include: resource-service.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: code212

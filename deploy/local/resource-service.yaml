@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: resource-service
-          image: code212/resource-service:24
+          image: code212/resource-service:25
           imagePullPolicy: Never
           ports:
             - name: http
